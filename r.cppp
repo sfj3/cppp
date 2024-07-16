@@ -1,0 +1,5 @@
+wave myWave;
+amplitude = 1.6;
+frequency = 2.0;
+phase = 0.5;
++ * / - inverse;
