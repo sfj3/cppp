@@ -7,3 +7,7 @@ clang++ -std=c++11 -stdlib=libc++ compiler.cpp -o cppp
  ./cppp
 x=
 or whatever you want
+
+or 
+gcc -o c3 c3.c -lm
+./c3
