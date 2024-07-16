@@ -74,7 +74,7 @@ public:
                 }
                 break;
             case 'I':
-                inverse_wave();
+                inverse_wave(); //#still not working as a value, instead this is a reference call it as I= or Ix
                 continue;  // Skip the update_wave() call
             case '=':
                 print_waves();
