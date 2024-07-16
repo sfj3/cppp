@@ -9,6 +9,123 @@
 #include <fstream>
 #include <sstream>
 #include <stack>
+#include <cctype>
+#include <stdexcept>
+enum class TokenType {
+    WAVE, AMP, FREQ, PHASE, PLUS, MINUS, MULTIPLY, DIVIDE, INVERSE,
+    ASSIGN, NUMBER, IDENTIFIER,
+    IF, ELSE, WHILE, 
+    EQUAL, LESS, GREATER, NOT_EQUAL, RANDOM, PRINT
+};
+struct Token {
+    TokenType type;
+    std::string value;
+};
+class Lexer {
+public:
+    std::vector<Token> tokenize(const std::string& code) {
+        std::vector<Token> tokens;
+        std::istringstream iss(code);
+        std::string word;
+        while (iss >> word) {
+            if (word == "wave") tokens.push_back({TokenType::WAVE, word});
+            else if (word == "amplitude") tokens.push_back({TokenType::AMP, word});
+            else if (word == "frequency") tokens.push_back({TokenType::FREQ, word});
+            else if (word == "phase") tokens.push_back({TokenType::PHASE, word});
+            else if (word == "+") tokens.push_back({TokenType::PLUS, word});
+            else if (word == "-") tokens.push_back({TokenType::MINUS, word});
+            else if (word == "*") tokens.push_back({TokenType::MULTIPLY, word});
+            else if (word == "/") tokens.push_back({TokenType::DIVIDE, word});
+            else if (word == "inverse") tokens.push_back({TokenType::INVERSE, word});
+            else if (word == "=") tokens.push_back({TokenType::ASSIGN, word});
+            else if (word == "random") tokens.push_back({TokenType::RANDOM, word});
+            else if (word == "print") tokens.push_back({TokenType::PRINT, word});
+            else if (word == "if") tokens.push_back({TokenType::IF, word});
+            else if (word == "else") tokens.push_back({TokenType::ELSE, word});
+            else if (word == "while") tokens.push_back({TokenType::WHILE, word});
+            else if (word == "==") tokens.push_back({TokenType::EQUAL, word});
+            else if (word == "<") tokens.push_back({TokenType::LESS, word});
+            else if (word == ">") tokens.push_back({TokenType::GREATER, word});
+            else if (word == "!=") tokens.push_back({TokenType::NOT_EQUAL, word});
+            else if (std::isdigit(word[0])) tokens.push_back({TokenType::NUMBER, word});
+            else tokens.push_back({TokenType::IDENTIFIER, word});
+        }
+        return tokens;
+    }
+};
+class Parser {
+public:
+    std::string parse(const std::vector<Token>& tokens) {
+        std::string output;
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            switch (tokens[i].type) {
+                case TokenType::WAVE:
+                    output += "CPlusPlusPlus wave;\n";
+                    i++; // Skip the identifier after 'wave'
+                    break;
+                case TokenType::AMP:
+                case TokenType::FREQ:
+                case TokenType::PHASE:
+                    if (i + 2 < tokens.size() && tokens[i+1].type == TokenType::ASSIGN) {
+                        output += "wave.set_" + tokens[i].value + "(" + tokens[i+2].value + ");\n";
+                        i += 2;
+                    }
+                    break;
+                case TokenType::RANDOM:
+                    output += "wave.random_wave();\n";
+                    break;
+                case TokenType::PRINT:
+                    output += "wave.print_wave();\n";
+                    break;
+                case TokenType::IF:
+                if (i + 3 < tokens.size()) {
+                    output += "if (wave.compare(\"" + tokens[i+2].value + "\", " + tokens[i+3].value + ")) {\n";
+                    i += 3;
+                }
+                break;
+                case TokenType::ELSE:
+                    output += "} else {\n";
+                    break;
+                case TokenType::WHILE:
+                    if (i + 3 < tokens.size()) {
+                        output += "while (wave.compare(\"" + tokens[i+1].value + "\", " + tokens[i+2].value + ")) {\n";
+                        i += 2;
+                    }
+                    break;
+                case TokenType::PLUS:
+                    output += "wave.add_reference();\n";
+                    break;
+                case TokenType::MINUS:
+                    output += "wave.subtract_reference();\n";
+                    break;
+                case TokenType::MULTIPLY:
+                    output += "wave.multiply_reference();\n";
+                    break;
+                case TokenType::DIVIDE:
+                    output += "wave.divide_reference();\n";
+                    break;
+                case TokenType::INVERSE:
+                    output += "wave.inverse();\n";
+                    break;
+                default:
+                    break;
+            }
+        }
+        return output;
+    }
+};
+class Compiler {
+private:
+    Lexer lexer;
+    Parser parser;
+
+public:
+    std::string compile(const std::string& code) {
+        auto tokens = lexer.tokenize(code);
+        return parser.parse(tokens);
+    }
+};
+
 class CPlusPlusPlus {
 private:
     std::vector<double> t;
@@ -44,6 +161,13 @@ public:
     void subtract_reference() { interpret("-"); }
     void multiply_reference() { interpret("*"); }
     void divide_reference() { interpret("/"); }
+    void inverse() {
+        for (int i = 0; i < SIZE; ++i) {
+            if (wave[i] != 0) wave[i] = 1 / wave[i];
+            else wave[i] = 0;  // Avoid division by zero
+        }
+        update_wave();
+    }
     void update_wave() {
         for (int i = 0; i < SIZE; ++i) {
             wave[i] = amp * std::sin(freq * t[i] + phase);
@@ -133,197 +257,6 @@ public:
     }
 };
 
-enum class TokenType {
-    WAVE, AMP, FREQ, PHASE, PLUS, MINUS, MULTIPLY, DIVIDE, INVERSE,
-    ASSIGN, NUMBER, IDENTIFIER, SEMICOLON,
-    IF, ELSE, WHILE, LPAREN, RPAREN, LBRACE, RBRACE,
-    EQUAL, LESS, GREATER, NOT_EQUAL, RANDOM, PRINT
-};
-
-struct Token{
-    TokenType type;
-    std::string value;
-};
-
-class Lexer {
-public:
-    std::vector<Token> tokenize(const std::string& code) {
-        std::vector<Token> tokens;
-        std::istringstream iss(code);
-        std::string word;
-        while (iss >> word) {
-            if (word == "wave") tokens.push_back({TokenType::WAVE, word});
-            else if (word == "amplitude") tokens.push_back({TokenType::AMP, word});
-            else if (word == "frequency") tokens.push_back({TokenType::FREQ, word});
-            else if (word == "phase") tokens.push_back({TokenType::PHASE, word});
-            else if (word == "+") tokens.push_back({TokenType::PLUS, word});
-            else if (word == "-") tokens.push_back({TokenType::MINUS, word});
-            else if (word == "*") tokens.push_back({TokenType::MULTIPLY, word});
-            else if (word == "/") tokens.push_back({TokenType::DIVIDE, word});
-            else if (word == "inverse") tokens.push_back({TokenType::INVERSE, word});
-            else if (word == "=") tokens.push_back({TokenType::ASSIGN, word});
-            else if (word == ";") tokens.push_back({TokenType::SEMICOLON, word});
-            else if (word == "random") tokens.push_back({TokenType::RANDOM, word});
-            else if (word == "print") tokens.push_back({TokenType::PRINT, word});
-            else if (word == "if") tokens.push_back({TokenType::IF, word});
-            else if (word == "else") tokens.push_back({TokenType::ELSE, word});
-            else if (word == "while") tokens.push_back({TokenType::WHILE, word});
-            else if (word == "(") tokens.push_back({TokenType::LPAREN, word});
-            else if (word == ")") tokens.push_back({TokenType::RPAREN, word});
-            else if (word == "{") tokens.push_back({TokenType::LBRACE, word});
-            else if (word == "}") tokens.push_back({TokenType::RBRACE, word});
-            else if (word == "==") tokens.push_back({TokenType::EQUAL, word});
-            else if (word == "<") tokens.push_back({TokenType::LESS, word});
-            else if (word == ">") tokens.push_back({TokenType::GREATER, word});
-            else if (word == "!=") tokens.push_back({TokenType::NOT_EQUAL, word});
-            else if (std::isdigit(word[0])) tokens.push_back({TokenType::NUMBER, word});
-            else tokens.push_back({TokenType::IDENTIFIER, word});
-        }
-        return tokens;
-    }
-};
-
-class Parser {
-public:
-    std::string parse(const std::vector<Token>& tokens) {
-        std::string output;
-        for (size_t i = 0; i < tokens.size(); ++i) {
-            switch (tokens[i].type) {
-                case TokenType::WAVE:
-                    output += "CPlusPlusPlus wave;\n";
-                    break;
-                case TokenType::AMP:
-                case TokenType::FREQ:
-                case TokenType::PHASE:
-                    if (i + 2 < tokens.size() && tokens[i+1].type == TokenType::ASSIGN) {
-                        output += "wave.set_" + tokens[i].value + "(" + tokens[i+2].value + ");\n";
-                        i += 2;
-                    }
-                    break;
-                case TokenType::RANDOM:
-                    output += "wave.random_wave();\n";
-                    break;
-                case TokenType::PRINT:
-                    output += "wave.print_wave();\n";
-                    break;
-                case TokenType::IF:
-                    output += "if (";
-                    i++; // Skip the 'if' token
-                    while (i < tokens.size() && tokens[i].type != TokenType::LBRACE) {
-                        output += tokens[i].value + " ";
-                        i++;
-                    }
-                    output += ") {\n";
-                    break;
-                case TokenType::ELSE:
-                    output += "} else {\n";
-                    break;
-                case TokenType::WHILE:
-                    output += "while (";
-                    i++; // Skip the 'while' token
-                    while (i < tokens.size() && tokens[i].type != TokenType::LBRACE) {
-                        output += tokens[i].value + " ";
-                        i++;
-                    }
-                    output += ") {\n";
-                    break;
-                case TokenType::LBRACE:
-                    output += "{\n";
-                    break;
-                case TokenType::RBRACE:
-                    output += "}\n";
-                    break;
-                case TokenType::PLUS:
-                    output += "wave.add_reference();\n";
-                    break;
-                case TokenType::MINUS:
-                    output += "wave.subtract_reference();\n";
-                    break;
-                case TokenType::MULTIPLY:
-                    output += "wave.multiply_reference();\n";
-                    break;
-                case TokenType::DIVIDE:
-                    output += "wave.divide_reference();\n";
-                    break;
-                case TokenType::INVERSE:
-                    output += "wave.inverse();\n";
-                    break;
-                case TokenType::SEMICOLON:
-                    output += ";\n";
-                    break;
-                case TokenType::IDENTIFIER:
-                case TokenType::NUMBER:
-                case TokenType::ASSIGN:
-                case TokenType::EQUAL:
-                case TokenType::LESS:
-                case TokenType::GREATER:
-                case TokenType::NOT_EQUAL:
-                    output += tokens[i].value + " ";
-                    break;
-                default:
-                    std::cerr << "Unexpected token: " << tokens[i].value << std::endl;
-                    break;
-            }
-        }
-        return output;
-    }
-};
-
-class Compiler {
-private:
-    Lexer lexer;
-    Parser parser;
-
-public:
-    std::string compile(const std::string& code) {
-        auto tokens = lexer.tokenize(code);
-        return parser.parse(tokens);
-    }
-};
-
-
-// int main() {
-//     Compiler compiler;
-//     std::string input;
-
-//     std::cout << "Welcome to C+++ Compiler!" << std::endl;
-//     std::cout << "Enter C+++ code (or 'quit' to exit):" << std::endl;
-
-//     while (true) {
-//         std::cout << "> ";
-//         std::getline(std::cin, input);
-        
-//         if (input == "quit") {
-//             break;
-//         }
-
-//         std::string compiled_code = compiler.compile(input);
-//         std::cout << "Compiled C++ code:" << std::endl;
-//         std::cout << compiled_code << std::endl;
-//     }
-
-//     std::cout << "Thank you for using C+++ Compiler!" << std::endl;
-//     return 0;
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -352,75 +285,78 @@ int main(int argc, char* argv[]) {
     // Execute the compiled code
     std::istringstream iss(compiled_code);
     std::string line;
-    std::vector<std::string> code_block;
-    std::stack<bool> execute_stack;
-    execute_stack.push(true);
+    std::stack<bool> condition_stack;
+    condition_stack.push(true);
 
     while (std::getline(iss, line)) {
-        if (line.find("CPlusPlusPlus wave;") == 0) {
-            // Wave object is already created, do nothing
-        } else if (line.find("wave.random_wave();") == 0) {
-            if (execute_stack.top()) wave.random_wave();
-        } else if (line.find("wave.print_wave();") == 0) {
-            if (execute_stack.top()) wave.print_wave();
-        } else if (line.find("wave.set_") == 0) {
-            if (execute_stack.top()) {
-                size_t start = line.find("(") + 1;
-                size_t end = line.find(")");
-                std::string value = line.substr(start, end - start);
-                if (line.find("set_amplitude") != std::string::npos) {
-                    wave.set_amplitude(std::stod(value));
-                } else if (line.find("set_frequency") != std::string::npos) {
-                    wave.set_frequency(std::stod(value));
-                } else if (line.find("set_phase") != std::string::npos) {
-                    wave.set_phase(std::stod(value));
-                }
-            }
-        } else if (line.find("if (") == 0) {
-            size_t condition_start = line.find("(") + 1;
-            size_t condition_end = line.find(")");
-            std::string condition = line.substr(condition_start, condition_end - condition_start);
-            std::istringstream condition_stream(condition);
-            std::string left, op, right;
-            condition_stream >> left >> op >> right;
-            bool condition_result = wave.compare(op, std::stod(right));
-            execute_stack.push(execute_stack.top() && condition_result);
-        } else if (line.find("} else {") == 0) {
-            bool prev = execute_stack.top();
-            execute_stack.pop();
-            execute_stack.push(!prev);
-        } else if (line.find("while (") == 0) {
-            size_t condition_start = line.find("(") + 1;
-            size_t condition_end = line.find(")");
-            std::string condition = line.substr(condition_start, condition_end - condition_start);
-            std::istringstream condition_stream(condition);
-            std::string left, op, right;
-            condition_stream >> left >> op >> right;
-            while (execute_stack.top() && wave.compare(op, std::stod(right))) {
-                for (const auto& block_line : code_block) {
-                    std::istringstream block_iss(block_line);
-                    std::getline(block_iss, line);
-                    if (line.find("wave.") == 0) {
-                        std::string command = line.substr(5, line.length() - 6);
-                        wave.interpret(command);
+        if (condition_stack.top()) {
+            if (line.find("wave.") == 0) {
+                size_t method_end = line.find('(');
+                if (method_end != std::string::npos) {
+                    std::string method = line.substr(5, method_end - 5);
+                    size_t start = line.find("(") + 1;
+                    size_t end = line.find(")");
+                    std::string arg = line.substr(start, end - start);
+
+                    try {
+                        if (method == "set_amplitude") {
+                            wave.set_amplitude(std::stod(arg));
+                        } else if (method == "set_frequency") {
+                            wave.set_frequency(std::stod(arg));
+                        } else if (method == "set_phase") {
+                            wave.set_phase(std::stod(arg));
+                        } else if (method == "random_wave") {
+                            wave.random_wave();
+                        } else if (method == "print_wave") {
+                            wave.print_wave();
+                        } else if (method == "add_reference") {
+                            wave.add_reference();
+                        } else if (method == "subtract_reference") {
+                            wave.subtract_reference();
+                        } else if (method == "multiply_reference") {
+                            wave.multiply_reference();
+                        } else if (method == "divide_reference") {
+                            wave.divide_reference();
+                        } else if (method == "inverse") {
+                            wave.inverse();
+                        }
+                    } catch (const std::invalid_argument& e) {
+                        std::cerr << "Invalid argument in method call: " << line << std::endl;
+                    } catch (const std::out_of_range& e) {
+                        std::cerr << "Argument out of range in method call: " << line << std::endl;
                     }
                 }
+            } 
+            else if (line.find("if (wave.compare(") == 0 || line.find("while (wave.compare(") == 0) {
+            size_t start = line.find("(") + 14;
+            size_t end = line.find("))");
+            std::string condition = line.substr(start, end - start);
+            std::istringstream condition_stream(condition);
+            std::string op, value;
+            condition_stream >> op >> value;
+            op = op.substr(1, op.length() - 2); // Remove quotes
+            try {
+                bool result = wave.compare(op, std::stod(value));
+                condition_stack.push(condition_stack.top() && result);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Invalid argument in comparison: " << line << std::endl;
+                condition_stack.push(false);
+            } catch (const std::out_of_range& e) {
+                std::cerr << "Argument out of range in comparison: " << line << std::endl;
+                condition_stack.push(false);
             }
-            code_block.clear();
+        }
         } else if (line == "}") {
-            execute_stack.pop();
-            if (execute_stack.empty()) {
-                execute_stack.push(true);
+            if (!condition_stack.empty()) {
+                condition_stack.pop();
             }
-            code_block.clear();
-        } else if (line == "{") {
-            // Do nothing, just a block start
-        } else {
-            code_block.push_back(line);
-            if (execute_stack.top() && line.find("wave.") == 0) {
-                std::string command = line.substr(5, line.length() - 6);
-                wave.interpret(command);
+            if (condition_stack.empty()) {
+                condition_stack.push(true);
             }
+        } else if (line.find("} else {") == 0) {
+            bool prev = condition_stack.top();
+            condition_stack.pop();
+            condition_stack.push(!prev);
         }
     }
 
