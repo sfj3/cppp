@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <random>
 #include <chrono>
-class WaveGrub {
+class CPlusPlusPlus {
 private:
     std::vector<double> t;
     std::vector<double> wave;
@@ -16,7 +16,7 @@ private:
     std::default_random_engine generator;
 
 public:
-    WaveGrub() : 
+    CPlusPlusPlus() : 
         t(SIZE), wave(SIZE), ref_wave(SIZE),
         amp(1), freq(1), phase(0) {
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -115,7 +115,7 @@ public:
 };
 
 int main() {
-    WaveGrub wg;
+    CPlusPlusPlus wg;
     std::string input;
 
     std::cout << "Welcome to c+++ Interactive Interpreter!" << std::endl;
