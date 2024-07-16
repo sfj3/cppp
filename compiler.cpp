@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <random>
 #include <chrono>
+
 class CPlusPlusPlus {
 private:
     std::vector<double> t;
@@ -84,6 +85,9 @@ public:
                 case 'N':
                     random_wave();
                     break;
+                case 'x':
+                    compare_waves();
+                    break;
             }
             update_wave();
         }
@@ -100,6 +104,17 @@ public:
         amp = 1;
         freq = 1;
         phase = 0;
+    }
+
+    void compare_waves() {
+        bool result = true;
+        for (int i = 0; i < SIZE; ++i) {
+            if (wave[i] != ref_wave[i]) {
+                result = false;
+                break;
+            }
+        }
+        std::cout << (result ? "true" : "false") << std::endl;
     }
 
     void print_waves() {
@@ -131,6 +146,7 @@ int main() {
     std::cout << "  = (print waves)" << std::endl;
     std::cout << "  R (reset wave to initial state)" << std::endl;
     std::cout << "  N (generate a new random wave)" << std::endl;
+    std::cout << "  x (compare wave with reference wave)" << std::endl;
     std::cout << "Enter commands (or 'quit' to exit):" << std::endl;
 
     while (true) {
