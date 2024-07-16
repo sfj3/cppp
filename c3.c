@@ -99,15 +99,16 @@ void compare_waves(const CPlusPlusPlus *wg) {
 
 void interpret(CPlusPlusPlus *wg, const char *code) {
     int length = strlen(code);
+    int update_needed = 0;
     for (int i = 0; i < length; i++) {
         char cmd = code[i];
         switch (cmd) {
-            case 'A': wg->amp = fmin(wg->amp + 0.1, 2.0); break;
-            case 'a': wg->amp = fmax(wg->amp - 0.1, 0.1); break;
-            case 'F': wg->freq = fmin(wg->freq + 0.5, 10.0); break;
-            case 'f': wg->freq = fmax(wg->freq - 0.5, 0.5); break;
-            case 'P': wg->phase = fmod(wg->phase + 0.2, 2 * M_PI); break;
-            case 'p': wg->phase = fmod(wg->phase - 0.2 + 2 * M_PI, 2 * M_PI); break;
+            case 'A': wg->amp = fmin(wg->amp + 0.1, 2.0); update_needed = 1; break;
+            case 'a': wg->amp = fmax(wg->amp - 0.1, 0.1); update_needed = 1; break;
+            case 'F': wg->freq = fmin(wg->freq + 0.5, 10.0); update_needed = 1; break;
+            case 'f': wg->freq = fmax(wg->freq - 0.5, 0.5); update_needed = 1; break;
+            case 'P': wg->phase = fmod(wg->phase + 0.2, 2 * M_PI); update_needed = 1; break;
+            case 'p': wg->phase = fmod(wg->phase - 0.2 + 2 * M_PI, 2 * M_PI); update_needed = 1; break;
             case '*':
                 for (int j = 0; j < SIZE; j++) wg->wave[j] *= wg->ref_wave[j];
                 break;
@@ -125,20 +126,24 @@ void interpret(CPlusPlusPlus *wg, const char *code) {
                 break;
             case 'R':
                 reset_wave(wg);
+                update_needed = 0; // reset_wave already updates the wave
                 break;
             case 'N':
                 random_wave(wg);
+                update_needed = 0; // random_wave already updates the wave
                 break;
             case 'x':
                 compare_waves(wg);
                 break;
             case 'I':
                 inverse_wave(wg);
-                continue;
+                break;
             case '=':
                 print_waves(wg);
                 break;
         }
+    }
+    if (update_needed) {
         update_wave(wg);
     }
 }
