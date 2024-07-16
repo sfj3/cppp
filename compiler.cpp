@@ -9,18 +9,18 @@
 #include <fstream>
 #include <sstream>
 #include <stack>
-#include <cctype>
-#include <stdexcept>
 enum class TokenType {
     WAVE, AMP, FREQ, PHASE, PLUS, MINUS, MULTIPLY, DIVIDE, INVERSE,
-    ASSIGN, NUMBER, IDENTIFIER,
-    IF, ELSE, WHILE, 
+    ASSIGN, NUMBER, IDENTIFIER, SEMICOLON,
+    IF, ELSE, WHILE, LPAREN, RPAREN, LBRACE, RBRACE,
     EQUAL, LESS, GREATER, NOT_EQUAL, RANDOM, PRINT
 };
+
 struct Token {
     TokenType type;
     std::string value;
 };
+
 class Lexer {
 public:
     std::vector<Token> tokenize(const std::string& code) {
@@ -38,11 +38,16 @@ public:
             else if (word == "/") tokens.push_back({TokenType::DIVIDE, word});
             else if (word == "inverse") tokens.push_back({TokenType::INVERSE, word});
             else if (word == "=") tokens.push_back({TokenType::ASSIGN, word});
+            else if (word == ";") tokens.push_back({TokenType::SEMICOLON, word});
             else if (word == "random") tokens.push_back({TokenType::RANDOM, word});
             else if (word == "print") tokens.push_back({TokenType::PRINT, word});
             else if (word == "if") tokens.push_back({TokenType::IF, word});
             else if (word == "else") tokens.push_back({TokenType::ELSE, word});
             else if (word == "while") tokens.push_back({TokenType::WHILE, word});
+            else if (word == "(") tokens.push_back({TokenType::LPAREN, word});
+            else if (word == ")") tokens.push_back({TokenType::RPAREN, word});
+            else if (word == "{") tokens.push_back({TokenType::LBRACE, word});
+            else if (word == "}") tokens.push_back({TokenType::RBRACE, word});
             else if (word == "==") tokens.push_back({TokenType::EQUAL, word});
             else if (word == "<") tokens.push_back({TokenType::LESS, word});
             else if (word == ">") tokens.push_back({TokenType::GREATER, word});
@@ -53,6 +58,7 @@ public:
         return tokens;
     }
 };
+
 class Parser {
 public:
     std::string parse(const std::vector<Token>& tokens) {
@@ -78,19 +84,25 @@ public:
                     output += "wave.print_wave();\n";
                     break;
                 case TokenType::IF:
-                if (i + 3 < tokens.size()) {
-                    output += "if (wave.compare(\"" + tokens[i+2].value + "\", " + tokens[i+3].value + ")) {\n";
-                    i += 3;
-                }
-                break;
+                    output += "if (wave.compare(";
+                    i += 2; // Skip 'if' and '('
+                    output += "\"" + tokens[i].value + "\", " + tokens[i+2].value + ")) {\n";
+                    i += 3; // Skip to '{'
+                    break;
                 case TokenType::ELSE:
                     output += "} else {\n";
                     break;
                 case TokenType::WHILE:
-                    if (i + 3 < tokens.size()) {
-                        output += "while (wave.compare(\"" + tokens[i+1].value + "\", " + tokens[i+2].value + ")) {\n";
-                        i += 2;
-                    }
+                    output += "while (wave.compare(";
+                    i += 2; // Skip 'while' and '('
+                    output += "\"" + tokens[i].value + "\", " + tokens[i+2].value + ")) {\n";
+                    i += 3; // Skip to '{'
+                    break;
+                case TokenType::LBRACE:
+                    output += "{\n";
+                    break;
+                case TokenType::RBRACE:
+                    output += "}\n";
                     break;
                 case TokenType::PLUS:
                     output += "wave.add_reference();\n";
@@ -108,12 +120,14 @@ public:
                     output += "wave.inverse();\n";
                     break;
                 default:
+                    // Ignore other tokens
                     break;
             }
         }
         return output;
     }
 };
+
 class Compiler {
 private:
     Lexer lexer;
@@ -290,44 +304,37 @@ int main(int argc, char* argv[]) {
 
     while (std::getline(iss, line)) {
         if (condition_stack.top()) {
-            if (line.find("wave.") == 0) {
-                size_t method_end = line.find('(');
-                if (method_end != std::string::npos) {
-                    std::string method = line.substr(5, method_end - 5);
-                    size_t start = line.find("(") + 1;
-                    size_t end = line.find(")");
-                    std::string arg = line.substr(start, end - start);
-
-                    try {
-                        if (method == "set_amplitude") {
-                            wave.set_amplitude(std::stod(arg));
-                        } else if (method == "set_frequency") {
-                            wave.set_frequency(std::stod(arg));
-                        } else if (method == "set_phase") {
-                            wave.set_phase(std::stod(arg));
-                        } else if (method == "random_wave") {
-                            wave.random_wave();
-                        } else if (method == "print_wave") {
-                            wave.print_wave();
-                        } else if (method == "add_reference") {
-                            wave.add_reference();
-                        } else if (method == "subtract_reference") {
-                            wave.subtract_reference();
-                        } else if (method == "multiply_reference") {
-                            wave.multiply_reference();
-                        } else if (method == "divide_reference") {
-                            wave.divide_reference();
-                        } else if (method == "inverse") {
-                            wave.inverse();
-                        }
-                    } catch (const std::invalid_argument& e) {
-                        std::cerr << "Invalid argument in method call: " << line << std::endl;
-                    } catch (const std::out_of_range& e) {
-                        std::cerr << "Argument out of range in method call: " << line << std::endl;
-                    }
+            if (line.find("CPlusPlusPlus wave;") == 0) {
+                // Wave object is already created, do nothing
+            } else if (line.find("wave.random_wave();") == 0) {
+                wave.random_wave();
+            } else if (line.find("wave.print_wave();") == 0) {
+                wave.print_wave();
+            } else if (line.find("wave.set_") == 0) {
+                size_t start = line.find("(") + 1;
+                size_t end = line.find(")");
+                std::string value = line.substr(start, end - start);
+                if (line.find("set_amplitude") != std::string::npos) {
+                    wave.set_amplitude(std::stod(value));
+                } else if (line.find("set_frequency") != std::string::npos) {
+                    wave.set_frequency(std::stod(value));
+                } else if (line.find("set_phase") != std::string::npos) {
+                    wave.set_phase(std::stod(value));
                 }
-            } 
-            else if (line.find("if (wave.compare(") == 0 || line.find("while (wave.compare(") == 0) {
+            } else if (line.find("wave.add_reference();") == 0) {
+                wave.add_reference();
+            } else if (line.find("wave.subtract_reference();") == 0) {
+                wave.subtract_reference();
+            } else if (line.find("wave.multiply_reference();") == 0) {
+                wave.multiply_reference();
+            } else if (line.find("wave.divide_reference();") == 0) {
+                wave.divide_reference();
+            } else if (line.find("wave.inverse();") == 0) {
+                wave.inverse();
+            }
+        }
+
+        if (line.find("if (wave.compare(") == 0) {
             size_t start = line.find("(") + 14;
             size_t end = line.find("))");
             std::string condition = line.substr(start, end - start);
@@ -335,17 +342,28 @@ int main(int argc, char* argv[]) {
             std::string op, value;
             condition_stream >> op >> value;
             op = op.substr(1, op.length() - 2); // Remove quotes
-            try {
-                bool result = wave.compare(op, std::stod(value));
-                condition_stack.push(condition_stack.top() && result);
-            } catch (const std::invalid_argument& e) {
-                std::cerr << "Invalid argument in comparison: " << line << std::endl;
-                condition_stack.push(false);
-            } catch (const std::out_of_range& e) {
-                std::cerr << "Argument out of range in comparison: " << line << std::endl;
-                condition_stack.push(false);
+            bool result = wave.compare(op, std::stod(value));
+            condition_stack.push(condition_stack.top() && result);
+        } else if (line.find("} else {") == 0) {
+            bool prev = condition_stack.top();
+            condition_stack.pop();
+            condition_stack.push(!prev);
+        } else if (line.find("while (wave.compare(") == 0) {
+            size_t start = line.find("(") + 14;
+            size_t end = line.find("))");
+            std::string condition = line.substr(start, end - start);
+            std::istringstream condition_stream(condition);
+            std::string op, value;
+            condition_stream >> op >> value;
+            op = op.substr(1, op.length() - 2); // Remove quotes
+            if (!wave.compare(op, std::stod(value))) {
+                // Skip the while block
+                int brace_count = 1;
+                while (brace_count > 0 && std::getline(iss, line)) {
+                    if (line == "{") brace_count++;
+                    if (line == "}") brace_count--;
+                }
             }
-        }
         } else if (line == "}") {
             if (!condition_stack.empty()) {
                 condition_stack.pop();
@@ -353,10 +371,6 @@ int main(int argc, char* argv[]) {
             if (condition_stack.empty()) {
                 condition_stack.push(true);
             }
-        } else if (line.find("} else {") == 0) {
-            bool prev = condition_stack.top();
-            condition_stack.pop();
-            condition_stack.push(!prev);
         }
     }
 
