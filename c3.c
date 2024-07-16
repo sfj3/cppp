@@ -43,7 +43,11 @@ void inverse_wave(CPlusPlusPlus *wg) {
     for (int i = 0; i < SIZE; i++) {
         if (wg->wave[i] != 0) {
             wg->wave[i] = 1 / wg->wave[i];
-        } else {
+        }
+        if (wg->wave[i] == 0) {
+            wg->wave[i] = 1;
+        }
+         else {
             wg->wave[i] = 0; // Avoid division by zero
         }
     }
@@ -106,12 +110,6 @@ void interpret(CPlusPlusPlus *wg, const char *code) {
                     else wg->wave[j] = 0; // Avoid division by zero
                 }
                 break;
-            case 'I':
-                inverse_wave(wg);
-                continue;
-            case '=':
-                print_waves(wg);
-                break;
             case 'R':
                 reset_wave(wg);
                 break;
@@ -120,6 +118,12 @@ void interpret(CPlusPlusPlus *wg, const char *code) {
                 break;
             case 'x':
                 compare_waves(wg);
+                break;
+            case 'I':
+                inverse_wave(wg);
+                continue;
+            case '=':
+                print_waves(wg);
                 break;
         }
         update_wave(wg);
