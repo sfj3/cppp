@@ -1,14 +1,5 @@
-Copywave MyWave
-amplitude,frequency,phase = random
+amplitude = 0.8
 print
-if (amplitude != 1.0) {
+if amplitude > 1.0
+    frequency = 3.0
     print
-} else {
-    if (frequency != 1.0) {
-        print
-    } else {
-        if (phase != 0.0) {
-            print
-        }
-    }
-}
