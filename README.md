@@ -11,3 +11,5 @@ or whatever you want
 or 
 gcc -o c3 c3.c -lm
 ./c3
+
+(ported to c)
