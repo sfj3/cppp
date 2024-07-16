@@ -1,5 +1,14 @@
-wave myWave;
-amplitude = 1.6;
-frequency = 2.0;
-phase = 0.5;
-+ * / - inverse;
+Copywave MyWave
+amplitude,frequency,phase = random
+print
+if (amplitude != 1.0) {
+    print
+} else {
+    if (frequency != 1.0) {
+        print
+    } else {
+        if (phase != 0.0) {
+            print
+        }
+    }
+}
