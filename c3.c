@@ -22,6 +22,7 @@ void init(CPlusPlusPlus *wg) {
     for (int i = 0; i < SIZE; i++) {
         wg->t[i] = 2 * M_PI * i / SIZE;
         wg->ref_wave[i] = sin(wg->t[i]);
+        wg->wave[i] = wg->ref_wave[i];  // Initialize wave to match ref_wave
     }
 }
 
@@ -39,16 +40,24 @@ void random_wave(CPlusPlusPlus *wg) {
     printf("Generated random wave with:\nAmp = %f, Freq = %f, Phase = %f\n", wg->amp, wg->freq, wg->phase);
 }
 
+double constrain(double value, double min, double max) {
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
 void inverse_wave(CPlusPlusPlus *wg) {
+    double e = exp(1.0);  // Euler's number
     for (int i = 0; i < SIZE; i++) {
-        if (wg->wave[i] != 0) {
-            wg->wave[i] = 1 / wg->wave[i];
-        }
-        if (wg->wave[i] == 0) {
-            wg->wave[i] = 1;
-        }
-         else {
-            wg->wave[i] = 0; // Avoid division by zero
+        if (fabs(wg->wave[i]) < 1.0/e) {
+            // For small absolute values, invert and constrain
+            wg->wave[i] = copysign(e, wg->wave[i]);
+        } else if (fabs(wg->wave[i]) > e) {
+            // For large absolute values, invert and constrain
+            wg->wave[i] = copysign(1.0/e, wg->wave[i]);
+        } else {
+            // For values between -e and -1/e, and between 1/e and e, safely invert
+            wg->wave[i] = 1.0 / wg->wave[i];
         }
     }
 }
@@ -64,7 +73,11 @@ void print_waves(const CPlusPlusPlus *wg) {
     printf("Current wave parameters: Amp = %f, Freq = %f, Phase = %f\n", wg->amp, wg->freq, wg->phase);
     printf("Wave:    ");
     for (int i = 0; i < SIZE; i += SIZE / 8) {
-        printf("%.2f ", wg->wave[i]);
+        if (isnan(wg->wave[i]) || isinf(wg->wave[i])) {
+            printf("ERR ");
+        } else {
+            printf("%.2f ", wg->wave[i]);
+        }
     }
     printf("\nRef Wave:");
     for (int i = 0; i < SIZE; i += SIZE / 8) {
