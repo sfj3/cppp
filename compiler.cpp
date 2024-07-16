@@ -8,7 +8,7 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
-class WaveGrub {
+class CPlusPlusPlus {
 private:
     std::vector<double> t;
     std::vector<double> wave;
@@ -18,7 +18,7 @@ private:
     std::default_random_engine generator;
 
 public:
-    WaveGrub() : 
+    CPlusPlusPlus() : 
         t(SIZE), wave(SIZE), ref_wave(SIZE),
         amp(1), freq(1), phase(0) {
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -163,7 +163,7 @@ public:
         std::string output;
         for (size_t i = 0; i < tokens.size(); ++i) {
             if (tokens[i].type == TokenType::WAVE) {
-                output += "WaveGrub wave;\n";
+                output += "CPlusPlusPlus wave;\n";
             } else if (tokens[i].type == TokenType::AMP && i+2 < tokens.size() && tokens[i+1].type == TokenType::ASSIGN) {
                 output += "wave.set_amplitude(" + tokens[i+2].value + ");\n";
                 i += 2;
@@ -201,7 +201,7 @@ public:
         auto tokens = lexer.tokenize(code);
         for (size_t i = 0; i < tokens.size(); ++i) {
             if (tokens[i].type == TokenType::WAVE) {
-                output += "WaveGrub wave;\n";
+                output += "CPlusPlusPlus wave;\n";
             } else if (tokens[i].type == TokenType::AMP && i+2 < tokens.size() && tokens[i+1].type == TokenType::ASSIGN) {
                 output += "wave.set_amplitude(" + tokens[i+2].value + ");\n";
                 i += 2;
@@ -289,7 +289,7 @@ int main(int argc, char* argv[]) {
     std::string code = buffer.str();
 
     Compiler compiler;
-    WaveGrub wg;
+    CPlusPlusPlus wg;
 
     std::string compiled_code = compiler.compile(code);
     std::cout << "Compiled C++ code:" << std::endl;
