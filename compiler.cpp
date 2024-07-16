@@ -50,48 +50,49 @@ public:
     }
 
     void interpret(const std::string& code) {
-        for (char cmd : code) {
-            switch (cmd) {
-                case 'A': amp = std::min(amp + 0.1, 2.0); break;
-                case 'a': amp = std::max(amp - 0.1, 0.1); break;
-                case 'F': freq = std::min(freq + 0.5, 10.0); break;
-                case 'f': freq = std::max(freq - 0.5, 0.5); break;
-                case 'P': phase = std::fmod(phase + 0.2, 2 * M_PI); break;
-                case 'p': phase = std::fmod(phase - 0.2 + 2 * M_PI, 2 * M_PI); break;
-                case '*':
-                    for (int j = 0; j < SIZE; ++j) wave[j] *= ref_wave[j];
-                    break;
-                case '+':
-                    for (int j = 0; j < SIZE; ++j) wave[j] += ref_wave[j];
-                    break;
-                case '-':
-                    for (int j = 0; j < SIZE; ++j) wave[j] -= ref_wave[j];
-                    break;
-                case '/':
-                    for (int j = 0; j < SIZE; ++j) {
-                        if (ref_wave[j] != 0) wave[j] /= ref_wave[j];
-                        else wave[j] = 0;  // Avoid division by zero
-                    }
-                    break;
-                case 'I':
-                    inverse_wave();
-                    break;
-                case '=':
-                    print_waves();
-                    break;
-                case 'R':
-                    reset_wave();
-                    break;
-                case 'N':
-                    random_wave();
-                    break;
-                case 'x':
-                    compare_waves();
-                    break;
-            }
-            update_wave();
+    for (char cmd : code) {
+        switch (cmd) {
+            case 'A': amp = std::min(amp + 0.1, 2.0); break;
+            case 'a': amp = std::max(amp - 0.1, 0.1); break;
+            case 'F': freq = std::min(freq + 0.5, 10.0); break;
+            case 'f': freq = std::max(freq - 0.5, 0.5); break;
+            case 'P': phase = std::fmod(phase + 0.2, 2 * M_PI); break;
+            case 'p': phase = std::fmod(phase - 0.2 + 2 * M_PI, 2 * M_PI); break;
+            case '*':
+                for (int j = 0; j < SIZE; ++j) wave[j] *= ref_wave[j];
+                break;
+            case '+':
+                for (int j = 0; j < SIZE; ++j) wave[j] += ref_wave[j];
+                break;
+            case '-':
+                for (int j = 0; j < SIZE; ++j) wave[j] -= ref_wave[j];
+                break;
+            case '/':
+                for (int j = 0; j < SIZE; ++j) {
+                    if (ref_wave[j] != 0) wave[j] /= ref_wave[j];
+                    else wave[j] = 0;  // Avoid division by zero
+                }
+                break;
+            case 'I':
+                inverse_wave();
+                continue;  // Skip the update_wave() call
+            case '=':
+                print_waves();
+                break;
+            case 'R':
+                reset_wave();
+                break;
+            case 'N':
+                random_wave();
+                break;
+            case 'x':
+                compare_waves();
+                break;
         }
+        update_wave();
     }
+}
+
 
     void inverse_wave() {
         for (int i = 0; i < SIZE; ++i) {
